@@ -6,4 +6,4 @@ jcasbin:
   driver-class-name: com.mysql.cj.jdbc.Driver
   username: root
   password: 123456
-  model-path: config/model.conf
+  model-path: conf/model.conf
