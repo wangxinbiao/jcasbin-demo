@@ -2,8 +2,11 @@ package com.tenxcloud.jcasbindemo.task;
 
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONArray;
+import com.tenxcloud.jcasbindemo.config.EnforcerFactory;
+import com.tenxcloud.jcasbindemo.entry.Policy;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
+import org.casbin.jcasbin.main.Enforcer;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
@@ -30,12 +33,13 @@ public class InitTask implements ApplicationRunner {
     @Autowired
     WebApplicationContext applicationContext;
 
+    private static Enforcer enforcer;
+
     @Override
     public void run(ApplicationArguments args) {
         RequestMappingHandlerMapping mapping = applicationContext.getBean(RequestMappingHandlerMapping.class);
         // 获取url与类和方法的对应信息
         Map<RequestMappingInfo, HandlerMethod> map = mapping.getHandlerMethods();
-
         List<Map<String, String>> list = new ArrayList<Map<String, String>>();
         for (Map.Entry<RequestMappingInfo, HandlerMethod> m : map.entrySet()) {
             Map<String, String> map1 = new HashMap<String, String>();
@@ -48,16 +52,6 @@ public class InitTask implements ApplicationRunner {
             RequestMethodsRequestCondition methodsCondition = info.getMethodsCondition();
             for (RequestMethod requestMethod : methodsCondition.getMethods()) {
                 map1.put("type", requestMethod.toString());
-            }
-
-            for (String url : p.getPatterns()) {
-                //过滤不需要的url
-//                PathMatcher matcher = new AntPathMatcher();
-//                boolean match = matcher.match("/api/v1/data-service/**", url);
-//                if (match){
-                map1.put("url", url);
-//                    list.add(map1);
-//                }
             }
 
             // 获取swagger，@Api注解中的tags
@@ -85,9 +79,30 @@ public class InitTask implements ApplicationRunner {
                     }
                 }
             }
-            list.add(map1);
+
+            for (String url : p.getPatterns()) {
+                //过滤不需要的url
+                PathMatcher matcher = new AntPathMatcher();
+                boolean match = matcher.match("/api/v1/**", url);
+                if (match){
+                    map1.put("url", url);
+                    list.add(map1);
+                }
+            }
         }
         JSONArray jsonArray = JSONArray.parseArray(JSON.toJSONString(list));
         System.out.println(jsonArray);
+
+        enforcer = EnforcerFactory.getEnforcer();
+        List<List<String>> permissionsForUser = enforcer.getPermissionsForUser("admin", "p");
+        if (list.size() != permissionsForUser.size()){
+            for (Map<String,String> m : list){
+                Policy p = new Policy();
+                p.setSub("admin");
+                p.setObj(m.get("url"));
+                p.setAct(m.get("type"));
+                EnforcerFactory.addPolicy(p);
+            }
+        }
     }
 }

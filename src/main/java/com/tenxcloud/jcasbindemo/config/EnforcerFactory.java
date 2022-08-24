@@ -36,8 +36,8 @@ public class EnforcerFactory implements InitializingBean {
      * @return
      */
     public static boolean addPolicy(Policy policy) {
-        boolean addPolicy = enforcer.addPolicy("admin", policy.getObj(), policy.getAct());
-        enforcer.addGroupingPolicy(policy.getSub(),"admin");
+        boolean addPolicy = enforcer.addPolicy(policy.getSub(), policy.getObj(), policy.getAct());
+//        enforcer.addGroupingPolicy(policy.getSub(),"admin");
         enforcer.savePolicy();
 
         return addPolicy;
