@@ -21,19 +21,12 @@ public class EnforcerFactory implements InitializingBean {
 
     @Override
     public void afterPropertiesSet() throws Exception {
-        //从数据库读取策略
+        //读取配置文件
         config = enforcerConfigProperties;
         //从数据库读取策略
-        Model model = new Model();
-        File file = new File("src/main/resources/conf/model.conf");
-        String canonicalPath = file.getCanonicalPath();
-        model.loadModel(canonicalPath);
-
-        String driverClassName = config.getDriverClassName();
-        JDBCAdapter jdbcAdapter = new JDBCAdapter(driverClassName, config.getUrl(), config.getUsername(), config.getPassword());
-        enforcer = new Enforcer(model, jdbcAdapter);
+        JDBCAdapter jdbcAdapter = new JDBCAdapter(config.getDriverClassName(), config.getUrl(), config.getUsername(), config.getPassword());
+        enforcer = new Enforcer(config.getModelPath(), jdbcAdapter);
         enforcer.loadPolicy();//Load the policy from DB.
-//        getEnforcer();
     }
 
     /**
